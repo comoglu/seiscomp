@@ -576,24 +576,28 @@ def on_check(args, _):
     cntStarted = 0
     for mod in mods:
         if mod.name in args or len(args) == 0:
-            if shouldModuleRun(mod.name):
+            # Check enabled modules instead of just those with runfiles
+            if env.isModuleEnabled(mod.name) or isinstance(mod, seiscomp.kernel.CoreModule):
                 cntStarted += 1
                 mod.check()
 
     if not useCSV:
-        print(f"Summary: {cntStarted} started modules checked")
+        print(f"Summary: {cntStarted} modules checked")
 
     return 0
 
 
 def on_check_help(_):
-    print("Checks if a started module is still running. If not, it is")
-    print("restarted. If no modules are given, all started modules are")
-    print("checked.")
+    print("Checks if enabled modules are running. If an enabled module is not")
+    print("running, it will be restarted. This command also cleans up stale")
+    print("lock files from crashed processes. If no modules are given, all")
+    print("enabled modules are checked.")
     print()
     print("Examples:")
+    print("$ seiscomp check")
+    print("checking seedlink: not running, attempting start")
     print("$ seiscomp check seedlink")
-    print("seedlink is already running")
+    print("checking seedlink: already running")
 
 
 def on_exec(args, _):

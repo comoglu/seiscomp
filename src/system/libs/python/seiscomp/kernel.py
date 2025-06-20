@@ -323,7 +323,32 @@ class Module:
         return self.env.start(self.name, self.env.binaryFile(self.name), self._get_start_params())
 
     def isRunning(self):
-        return self.env.tryLock(self.name) == False
+        lockfile = self.env.lockFile(self.name)
+        if not os.path.exists(lockfile):
+            return False
+        
+        try:
+            with open(lockfile, 'r') as f:
+                pid = int(f.readline().strip())
+            
+            # Check if process actually exists
+            try:
+                os.kill(pid, 0)  # Signal 0 just checks if process exists
+                return True
+            except OSError:
+                # Process doesn't exist, remove stale lock file
+                try:
+                    os.remove(lockfile)
+                except OSError:
+                    pass
+                return False
+        except (ValueError, IOError):
+            # Invalid or unreadable pid file
+            try:
+                os.remove(lockfile)
+            except OSError:
+                pass
+            return False
 
     def start(self):
         if self.isRunning():
